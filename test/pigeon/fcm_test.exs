@@ -31,6 +31,33 @@ defmodule Pigeon.FCMTest do
     end
   end
 
+  describe "connect_socket_options/1" do
+    test "uses HTTPS hostname matching for wildcard certificates" do
+      config =
+        Pigeon.FCM.Config.new(
+          auth: PigeonTest.Goth,
+          project_id: "example"
+        )
+
+      implementation = Pigeon.Configurable.impl_for!(config)
+      assert {:ok, options} = implementation.connect_socket_options(config)
+
+      assert options[:server_name_indication] == ~c"fcm.googleapis.com"
+
+      match_fun = options[:customize_hostname_check][:match_fun]
+
+      assert match_fun.(
+               {:dns_id, ~c"fcm.googleapis.com"},
+               {:dNSName, ~c"*.googleapis.com"}
+             )
+
+      refute match_fun.(
+               {:dns_id, ~c"evil.example.com"},
+               {:dNSName, ~c"*.googleapis.com"}
+             )
+    end
+  end
+
   describe "handle_push/3" do
     test "successfully sends a valid push" do
       notification =

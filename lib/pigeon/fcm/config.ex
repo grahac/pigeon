@@ -68,9 +68,12 @@ defimpl Pigeon.Configurable, for: Pigeon.FCM.Config do
     end
   end
 
-  def connect_socket_options(config) do
+  def connect_socket_options(%@for{uri: uri} = config) do
     opts =
       [
+        {:server_name_indication, uri},
+        {:customize_hostname_check,
+         [match_fun: :public_key.pkix_verify_hostname_match_fun(:https)]},
         {:active, :once},
         {:packet, :raw},
         {:reuseaddr, true},
